@@ -37,9 +37,9 @@ var slice = Array.prototype.slice;
 		},
 
 		initElement:function(_canvas){
-			if(_canvas.canBox)
+			if(_canvas.CanBox)
 				return _canvas;
-			_canvas.canBox = new canBox();
+			_canvas.CanBox = new CanBox();
 			if(_canvas.width)
 				_canvas.style.width = _canvas.width+'px';
 			if(_canvas.height)
@@ -54,9 +54,9 @@ var slice = Array.prototype.slice;
 				style.height = '100%';
 			}
 			_canvas.appendChild(PositionDiv);
-			_canvas.canBox.canvas = PositionDiv;
+			_canvas.CanBox.canvas = PositionDiv;
 			_canvas.getContext = function(){
-				return this.canBox;
+				return this.CanBox;
 			}
 			return _canvas;
 		},
@@ -75,14 +75,14 @@ var slice = Array.prototype.slice;
 		}
 	}
 	_CanboxManager.init();
-var canBox = function(){
+var CanBox = function(){
 	this.setIDs ='automatic';
 	this.fillStyle = '#000000';
 	this.strokeStyle = '#000000';
 	this.lineWidth = '1';
 	this.canvas = '';
 	this.globalAlpha = false;
-	this.canBox = true;
+	this.canBox = this.CanBox = this.canbox = true;
 	this.fontFamily = '';
 	var p = {
 		savestates:[],
