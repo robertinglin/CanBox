@@ -1,9 +1,9 @@
 /*
-	Canbox v0.2
+	Canbox v0.2.1
 	Author: Robert Inglin
 	Credit: Google's ExCanvas for _CanboxManager code
 	Released Under the MIT License
-*/	
+*/
 var slice = Array.prototype.slice;
   function bind(f, obj, var_args) {
     var a = slice.call(arguments, 2);
@@ -45,6 +45,7 @@ var slice = Array.prototype.slice;
 			if(_canvas.height)
 				_canvas.style.height = _canvas.height+'px';
 			_canvas.style.overflow='hidden';
+
 			var PositionDiv = document.createElement('div');
 			PositionDiv.className = 'CanBoxStyles canboxItem';
 			this.addStyleTag('.CanBoxStyles img{display:block;}')
@@ -52,8 +53,10 @@ var slice = Array.prototype.slice;
 				style.position = 'relative';
 				style.width = '100%';
 				style.height = '100%';
+				style.cursor = 'default';
 			}
 			_canvas.appendChild(PositionDiv);
+
 			_canvas.CanBox.canvas = PositionDiv;
 			_canvas.getContext = function(){
 				return this.CanBox;
@@ -63,7 +66,7 @@ var slice = Array.prototype.slice;
 		addStyleTag:function(styleData){
 			if(this.STYLETag)
 				return false;
-			
+
 			hAppend = true;
 			this.STYLETag = document.createElement('style');
 			this.STYLETag.type = 'text/css';
@@ -84,6 +87,7 @@ var CanBox = function(){
 	this.globalAlpha = false;
 	this.canBox = this.CanBox = this.canbox = true;
 	this.fontFamily = '';
+	this.imageIDs = [];
 	var p = {
 		savestates:[],
 		SetID:0,
@@ -97,18 +101,18 @@ var CanBox = function(){
 		objects:[],//holds all objects/containers
 		createContainer:function(x,y,w,h,type){
 			this.par.canvas.style.position='relative';
-			ID = (this.par.setIDs=='automatic')?this.objects.length:this.SetID;
-			if(typeof(this.namedObjects[ID])!=='undefined'){
-				
+			var ID = (this.par.setIDs=='automatic')?this.objects.length:this.SetID;
+			if(typeof(this.namedObjects[ID])!=='undefined' && this.objects[this.namedObjects[ID]]){
 				this.clearContainer(this.namedObjects[ID]);
 				obj = this.objects[this.namedObjects[ID]];
 				e = obj.elements[0];
+				e.id = this.namedObjects[ID];
 				e.className = 'canboxItem';
 				e.style.position = 'absolute';
 				e.style.left = parseInt(x)+'px';
 				e.style.top = parseInt(y)+'px';
-				e.style.width = parseInt(w)+'px';
-				e.style.height = parseInt(h)+'px';
+				e.style.width = Math.abs(parseInt(w))+'px';
+				e.style.height = Math.abs(parseInt(h))+'px';
 			}else{
 				cID = this.objects.length;
 				this.namedObjects[ID] = cID;
@@ -118,15 +122,18 @@ var CanBox = function(){
 				}
 				this.objects[cID].elements[0] = document.createElement('div');
 				e = this.objects[cID].elements[0];
+				e.ondragstart=function(){return false;};
+				e.style.MozUserSelect="none";
+				e.onselectstart=function(){return false}
 				e.className = 'canboxItem';
 				e.style.position = 'absolute';
 				e.style.left = parseInt(x)+'px';
 				e.style.top = parseInt(y)+'px';
-				e.style.width = parseInt(w)+'px';
-				e.style.height = parseInt(h)+'px';
+				e.style.width = Math.abs(parseInt(w))+'px';
+				e.style.height = Math.abs(parseInt(h))+'px';
 				this.par.canvas.appendChild(e);
 				obj = this.objects[cID];
-			}			
+			}
 			obj.type = type;
 			obj.x = x;
 			obj.y = y;
@@ -135,18 +142,15 @@ var CanBox = function(){
 			return obj;
 		},
 		clearContainer:function(cID){
-			
+			try{
 			container = this.objects[cID].elements[0].childNodes;
 			container[0].parentNode.removeChild(container[0])
-			//
-			
-			//try{
-			
+			}catch(e){}//console.log(e,this.objects[cID],this.objects[cID].elements[0])}
+
 			for(var i = 0,len=container.length;i<len;i++){
-				
+
 				container[i].parentNode.removeChild(container[i]);
 			}
-			//}catch(e){};
 		},
 		removeContainer:function(cID){
 			this.clearContainer(cID);
@@ -177,19 +181,20 @@ var CanBox = function(){
 		},
 		copyImage:function(img){
 			var i = new Image();
+			i.type = 'image';
 			i.src = img.src;
 			i.style.display='block';
 			i.className = 'canboxItem';
 			return i;
 		},
 		convertColor:function(color){
-			if(this.par.globalAlpha)
+			if(this.par.globalAlpha !== false )
 				opacity = parseFloat(this.par.globalAlpha);
 			else if(color.indexOf('a(')>=0)
 				opacity = color.replace(/.*,([^\)]*)\)/,"$1");
 			else
 				opacity = 1;
-				
+
 			var args = color.replace(/.*\(([^,]*,[^,]*,[^,]*)(,|\)).*/,'$1').split(',');
 			if(color.indexOf('rgb')>=0){
 				var hex = this.RGBtoHex(args[0],args[1],args[2])
@@ -237,7 +242,7 @@ var CanBox = function(){
 			}
 		},
 		dcp:function(centerX,centerY,x,y,startAngle,endAngle,anti){
-			
+
 			if (x < y) {
 				var angle = 180/(Math.PI*Math.atan2(y, x));
 				var bool;
@@ -293,12 +298,12 @@ var CanBox = function(){
 			var y = y0
 			if (y0 < y1)
 				ystep = 1;
-			else 
+			else
 				ystep = -1;
 			for (var x = x0;x<x1;x++){
 				if (steep)
-					this.plotPoint(y,x) 
-				else 
+					this.plotPoint(y,x)
+				else
 					this.plotPoint(x,y)
 				error = error - deltay;
 				if (error < 0){
@@ -306,7 +311,7 @@ var CanBox = function(){
 					error = error + deltax;
 				}
 			}
-			
+
 		},
 		toHex:function(num){if(num<16){switch(num){case 10:num = 'A';break;case 11:num = 'B';break;case 12:num = 'C';break;case 13:num = 'D';break;case 14:num = 'E';break;case 15:num = 'F';break;}}else{var f = Math.floor(num/16);var s = this.toHex(num-(f*16));f = this.toHex(f);num = f+''+s;}return num;},
 		RGBtoHex:function(r,g,b){r = this.toHex(r);if(!r.substr(1))r = '0' + '' + r;g = this.toHex(g);if(!g.substr(1))g= '0' + '' + g;b = this.toHex(b);if(!b.substr(1))b= '0' + '' + b;return '#' + r + '' + g + '' + b;},
@@ -316,7 +321,7 @@ var CanBox = function(){
 		setOpacity:function(ele,opacity){
 			opacity = opacity*1;
 			 if (/MSIE/.test(navigator.userAgent) && !window.opera) {
-				if(opacity < 1 && opacity !== 0)
+				if(opacity <= 1 && opacity !== false)
 					opacity = opacity*100;
 				var filter = 'progid:DXImageTransform.Microsoft.Alpha(opacity=' + opacity +')';
 				ele.style.filter = filter;
@@ -375,7 +380,7 @@ var CanBox = function(){
 			}
 			if(xval=='right'){
 				L = [0,x-cx];
-				R = [L[1],cw-L[1]];	
+				R = [L[1],cw-L[1]];
 			}
 			if(xval=='left'){
 				L = [0,w-(cx-x)];
@@ -390,7 +395,7 @@ var CanBox = function(){
 				}else{
 					if(yval=='top')
 						rem=0;
-					else 
+					else
 						rem=1;
 					cut[0] = [0,T[0],cw,T[1]];
 					cut[1] = [0,B[0],cw,B[1]];
@@ -416,7 +421,7 @@ var CanBox = function(){
 					cut[7] = [xC[0],yB[0],xC[1],yB[1]];
 					cut[8] = [xR[0],yB[0],xR[1],yB[1]];
 				}else{
-					if(yval='top')
+					if(yval=='top')
 						rem=2;
 					else
 						rem=3;
@@ -445,7 +450,7 @@ var CanBox = function(){
 					cut[2] = [L[0],yC[0],L[1],yC[1]];
 					cut[3] = [R[0],yC[0],R[1],yC[1]];
 					cut[4] = [L[0],yB[0],L[1],yB[1]];
-					cut[5] = [R[0],yB[0],R[1],yB[1]];				
+					cut[5] = [R[0],yB[0],R[1],yB[1]];
 				}else{
 					if(xval=='left'){
 						if(yval=='top')
@@ -462,7 +467,7 @@ var CanBox = function(){
 					cut[1] = [R[0],T[0],R[1],T[1]];
 					cut[2] = [L[0],B[0],L[1],B[1]];
 					cut[3] = [R[0],B[0],R[1],B[1]];
-					
+
 				}
 			}
 			return [rem,cut];
@@ -478,9 +483,9 @@ var CanBox = function(){
 				var wratio = w2/w;
 				var hratio = h2/h;
 				x *= wratio;
-				
+
 				imgw = wratio*img.width;
-				
+
 				y *= hratio;
 				imgh = hratio*img.height;
 				img.style.top = -1*y +'px';
@@ -489,7 +494,7 @@ var CanBox = function(){
 				img.style.height = imgh +'px' ;
 				img.style.position = 'absolute';
 				img.style.display ='block';
-				
+
 			}
 			imgHolder.img = img;
 			imgHolder.appendChild(img);
@@ -498,6 +503,7 @@ var CanBox = function(){
 	}
 	this.save = function(){
 		p.savestates[p.savestates.length] = {
+			font:this.font,
 			fillstyle:this.fillStyle,
 			strokestyle:this.strokwStyle,
 			linewidth:this.lineWidth,
@@ -512,7 +518,9 @@ var CanBox = function(){
 		this.strokeStyle = savestate.strokstyle;
 		this.lineWidth = savestate.linewidth;
 		this.globalAlpha = savestate.globalalpha;
+		this.font = savestate.font;
 		p.savestates = p.savestates.slice(0,-1);
+
 	}
 	this.fillRect = function(x,y,w,h,container){
 		if(container){
@@ -522,6 +530,7 @@ var CanBox = function(){
 			c = p.createContainer(x,y,w,h,'rect');
 			var rect = p.createDiv(0,0,w,h);
 		}
+
 		var colorOpacity = p.convertColor(this.fillStyle);
 		if(colorOpacity[1]!=1){
 			p.setOpacity(rect,colorOpacity[1]);
@@ -535,12 +544,13 @@ var CanBox = function(){
 		var lineWidth = parseInt(this.lineWidth);
 		if(container){
 			c = container;
-			var rect = p.createDiv(x,y,w,h);
+			var rect = p.createDiv(x-1,y-1,w,h);
 		}else{
-			c = p.createContainer(x,y,w,h,'rect');
+			c = p.createContainer(x-1,y-1,w,h,'rect');
 			var rect = p.createDiv(0,0,w,h);
 		}
-		var rect = p.createDiv(-lineWidth/2,-lineWidth/2,w-lineWidth,h-lineWidth);
+		var rect = p.createDiv(-lineWidth/2,-lineWidth/2,w-lineWidth*3,h-lineWidth*3);
+		if(!this.strokeStyle)this.strokeStyle = this.fillStyle;
 		var colorOpacity = p.convertColor(this.strokeStyle);
 		if(colorOpacity[1]!=1){
 			p.setOpacity(rect,colorOpacity[1]);
@@ -549,12 +559,28 @@ var CanBox = function(){
 		rect.style.borderColor = colorOpacity[0];
 		rect.style.borderStyle = 'solid';
 		rect.style.borderWidth = parseInt(this.lineWidth) + 'px';
+		if (/MSIE/.test(navigator.userAgent) && !window.opera) {
+			rect.style.width = parseInt(rect.style.width) + this.lineWidth*2;
+			rect.style.height = parseInt(rect.style.height) + this.lineWidth*2;
+		}
 		c.strokeStyle=colorOpacity[0];
 		c.opacity=colorOpacity[1];
 		p.addElement(c.id,rect);
 	}
 	this.drawImage = function(image,x,y,w,h,x2,y2,w2,h2){
-		var img = p.copyImage(image);
+		if(!this.imageIDs[p.SetID]){
+			this.imageIDs[p.SetID] = [];
+		}
+		if(!this.imageIDs[p.SetID][image.src] || (/MSIE/.test(navigator.userAgent) && !window.opera)){
+			this.imageIDs[p.SetID][image.src] = p.copyImage(image);
+		}
+		var img = this.imageIDs[p.SetID][image.src];
+		img.style.top = 0;
+		img.style.left = 0;
+		//image;//p.copyImage(image);
+		img.ondragstart=function(){return false;};
+		img.style.MozUserSelect="none";
+		img.onselectstart=function(){return false}
 		if(!w)
 			w = parseInt(img.width);
 		if(!h)
@@ -587,6 +613,10 @@ var CanBox = function(){
 			}
 		}
 		var imgHolder = p.cutImage(img,x,y,w,h,x2,y2,w2,h2);
+		var colorOpacity = p.convertColor('');
+		if(colorOpacity[1]!=1){
+			p.setOpacity(imgHolder,colorOpacity[1]);
+		}
 		if(this.flip){
 			if(this.flip == 'hv'){
 				img.style.filter ='progid:DXImageTransform.Microsoft.BasicImage(rotation=2)';
@@ -626,7 +656,7 @@ var CanBox = function(){
 
 		if(p.paths.length>0){
 			for(var i = 0,len = p.paths.length;i<len;i++){
-				
+
 				p.plotPath = i;
 				p.plot[p.plotPath] = [];
 				//if(!p.paths)
@@ -688,9 +718,9 @@ var CanBox = function(){
 		p.paths[p.currentPath][(p.moveBool == true)?len-1:len] = ['arc', x0, y0,radius, startAngle,endAngle, (anticlockwise)?true:false];
 	}
 	this.clearRect = function(x,y,w,h){
-		
+
 		for(var i =0,len = p.objects.length;i<len;i++){
-			if(typeof(p.objects[i])==='undefined')	
+			if(typeof(p.objects[i])==='undefined')
 				continue;
 			var cx = p.objects[i].x;
 			var cy = p.objects[i].y;
@@ -709,7 +739,7 @@ var CanBox = function(){
 			switch(obj.type){
 				case 'points':
 					for(var j=1,len2=obj.elements.length;j<len2;j++){
-						
+
 						var cx = parseInt(obj.elements[j].style.left);
 						var cy = parseInt(obj.elements[j].style.top);
 						var cw = parseInt(obj.elements[j].style.width);
@@ -717,9 +747,9 @@ var CanBox = function(){
 						if((y+h<cy)||(y>cy+ch)
 							||(x+w<cx)||(x>cx+cw))
 							continue;
-						
+
 						obj.elements[0].removeChild(obj.elements[j]);
-						
+
 					}
 				break;
 				case 'image':
@@ -762,13 +792,13 @@ var CanBox = function(){
 							this.fillStyle = obj.fillStyle;
 						if(obj.strokeStyle)
 							this.strokeStyle =obj.strokeStyle;
-						if(obj.opacity)
-							this.globalAlpha = obj.opacity;
+						if(typeof(obj.opacity)!=='undefined')
+							this.globalAlpha = parseFloat(obj.opacity);
 						var cutinfo = p.cutObject(obj.id,x,y,w,h);
 						var cuts = cutinfo[1];
 						var remove = cutinfo[0];
 						p.removeContainer(obj.id);
-						
+
 						for(var j=0,len2=cuts.length;j<len2;j++){
 							if(j==remove)
 								continue;
@@ -781,26 +811,36 @@ var CanBox = function(){
 					}
 				break;
 				default:
-				
+
 			}
 		}
 	}
 	this.measureText = function(text,hbool){
+		if (/MSIE/.test(navigator.userAgent) && !window.opera) {
+			if(!this.font){
+				this.font = "10px Arial";
+			}
+			if(isNaN(parseInt(this.font.substring(0,1)))){
+				this.font = "10px " + this.font
+			}
+		}
 		 measure = document.createElement('span');
 		document.body.appendChild(measure);
 		measure.innerHTML = text;
 		measure.style.font = this.font;
 		measure.style.color = this.fillStyle;
-		var width = measure.offsetWidth;
-		var height = measure.offsetHeight;
+		var width = measure.offsetWidth + 1;
+		var height = measure.offsetHeight -3;
 		document.body.removeChild(measure);
-		return !hbool?width:height;
+		return {width:width,height:height};
 	}
 	this.fillText = function(text,x,y){
-		var textbox = p.createContainer(x,y,this.measureText(text),this.measureText(text,true),'text');
+		var textbox = p.createContainer(x,y-this.measureText(text).height,this.measureText(text).width,this.measureText(text).height,'text');
 		textbox.elements[0].innerHTML = text;
 		textbox.elements[0].style.font = this.font;
 		textbox.elements[0].style.color = this.fillStyle;
+		var colorOpacity = p.convertColor(this.fillStyle);
+		p.setOpacity(textbox.elements[0],colorOpacity[1]);
 	}
 	this.strokeText = function(text,x,y){
 		var tmpfill  = this.fillStyle
@@ -810,13 +850,23 @@ var CanBox = function(){
 	}
 	this.clearCanvas = function(){
 		for(var i = 0,len=p.objects.length;i<len;i++){
-			if(typeof(p.objects[i])==='undefined')	
+			if(typeof(p.objects[i])==='undefined')
 				continue;
 			p.removeContainer(i);
 		}
 	}
 	this.setID = function(ID){
+
 		p.SetID = ID;
+		if(!p.namedObjects[ID]){
+			p.createContainer(0,0,0,0,'blank');
+		}
+	}
+	this.setZindex = function(z){
+		var ID = p.SetID;
+		if(p.namedObjects[ID]!==false){
+			p.objects[p.namedObjects[ID]].elements[0].style.zIndex = z;
+		}
 	}
 	this.moveContainer = function(ID,x,y){
 		p.objects[p.namedObjects[ID]].elements[0].style.top = y + 'px';
@@ -829,4 +879,3 @@ var CanBox = function(){
 		this.flip = type;
 	}
 }
-
